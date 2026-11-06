@@ -51,6 +51,39 @@ export function zeroGModel(): string {
   return process.env.ZEROG_MODEL || DEFAULT_MODEL;
 }
 
+type ErrorBody = RouterResponse & { error?: { message?: string; code?: string } };
+
+async function post(
+  baseUrl: string,
+  headers: Record<string, string>,
+  body: Record<string, unknown>,
+  timeoutMs = 45_000,
+): Promise<{ res: Response; text: string; json: ErrorBody }> {
+  let res: Response;
+  let text: string;
+  try {
+    res = await fetch(`${baseUrl}/chat/completions`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify(body),
+      signal: AbortSignal.timeout(timeoutMs),
+      cache: "no-store",
+    });
+    text = await res.text();
+  } catch (err) {
+    const timedOut = err instanceof Error && err.name === "TimeoutError";
+    throw new ZeroGError(
+      timedOut ? `0G did not respond within ${timeoutMs / 1000}s` : `0G request failed: ${String(err)}`,
+      null,
+    );
+  }
+  try {
+    return { res, text, json: JSON.parse(text) };
+  } catch {
+    throw new ZeroGError(`0G returned non-JSON (${res.status}): ${text.slice(0, 200)}`, res.status);
+  }
+}
+
 export async function chat(
   messages: ChatMessage[],
   opts: { json?: boolean; timeoutMs?: number } = {},
@@ -77,20 +110,11 @@ export async function chat(
   };
   if (opts.json) body.response_format = { type: "json_object" };
 
-  const res = await fetch(`${baseUrl}/chat/completions`, {
-    method: "POST",
-    headers,
-    body: JSON.stringify(body),
-    signal: AbortSignal.timeout(opts.timeoutMs ?? 60_000),
-    cache: "no-store",
-  });
-
-  const text = await res.text();
-  let json: RouterResponse & { error?: { message?: string; code?: string } };
-  try {
-    json = JSON.parse(text);
-  } catch {
-    throw new ZeroGError(`0G returned non-JSON (${res.status}): ${text.slice(0, 200)}`, res.status);
+  let { res, text, json } = await post(baseUrl, headers, body, opts.timeoutMs);
+  // Not every model supports response_format; the prompt asks for JSON anyway.
+  if (res.status === 400 && body.response_format) {
+    delete body.response_format;
+    ({ res, text, json } = await post(baseUrl, headers, body, opts.timeoutMs));
   }
 
   const requestId = json.x_0g_trace?.request_id ?? null;
