@@ -10,7 +10,7 @@ Creator posts on X become setups with versions and evidence, extracted on 0G Pri
 | `X_BEARER_TOKEN` | X API v2 app bearer token (needs Post lookup and Recent Search) |
 | `X_CREATOR_USERNAMES` | Comma-separated creators to track, e.g. `demo_creator` |
 | `ZEROG_API_KEY` | 0G Router inference key (`sk-...`) |
-| `ZEROG_MODEL` | Optional, default `glm-5.2` |
+| `ZEROG_MODEL` | Optional, default `glm-5.3` (must be a TeeML/TeeTLS model while the trust tier is pinned) |
 | `ZEROG_BASE_URL` | Optional, default `https://router-api.0g.ai/v1` |
 | `ZEROG_TRUST_MODE` | Optional: `verified` (default), `private`, or `standard` to drop the TEE pin |
 | `CRON_SECRET` | Sent by Supabase Cron to `/api/ingest` |

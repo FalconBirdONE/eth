@@ -5,7 +5,8 @@
 import type { VerificationStatus, ZeroGTrace } from "@/lib/shared/types";
 
 const DEFAULT_BASE_URL = "https://router-api.0g.ai/v1";
-const DEFAULT_MODEL = "glm-5.2";
+// glm-5.2 has no TEE provider, so the pinned "verified" tier would 503 on it.
+const DEFAULT_MODEL = "glm-5.3";
 
 export interface ChatMessage {
   role: "system" | "user" | "assistant";

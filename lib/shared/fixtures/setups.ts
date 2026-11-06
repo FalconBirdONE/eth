@@ -16,7 +16,7 @@ const SYNC = "2026-11-06T18:30:00.000Z";
 
 function trace(requestId: string, verificationStatus: ZeroGTrace["verificationStatus"] = "verified"): ZeroGTrace {
   return {
-    model: "glm-5.2",
+    model: "glm-5.3",
     requestId,
     chatId: `chatcmpl-${requestId.slice(0, 8)}`,
     providerAddress: "0x00000000000000000000000000000000000000f1",
@@ -128,7 +128,7 @@ export const freshSetupCard: SetupCard = {
   sourceText: "Long ETH at 2412.5 USDC, stop 2300. Small size.",
   sourceAvailability: "available",
   evidence: freshV1.evidence,
-  zeroGModel: "glm-5.2",
+  zeroGModel: "glm-5.3",
   zeroGRequestId: freshV1.zeroG.requestId,
   verificationStatus: "unverified",
   copyable: true,
@@ -174,7 +174,7 @@ export const targetOnlySetupCard: SetupCard = {
   sourceText: "$ETH is heading to 3,000 this month. Mark my words.",
   sourceAvailability: "available",
   evidence: targetV1.evidence,
-  zeroGModel: "glm-5.2",
+  zeroGModel: "glm-5.3",
   zeroGRequestId: targetV1.zeroG.requestId,
   verificationStatus: "verified",
   copyable: false,
