@@ -282,5 +282,6 @@ test("processing a stored post again is a no-op", opts, async () => {
   const r = await m.processPost(row);
   assert.equal(r.classification, "actionable");
   assert.ok(r.setupId);
+  assert.equal(r.trace?.verificationStatus, "verified", "stored trace is returned");
   assert.equal(zeroGCalls, calls);
 });

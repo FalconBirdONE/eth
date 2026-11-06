@@ -47,6 +47,7 @@ export const sourcePosts = pgTable(
     classification: text("classification").$type<Classification>(),
     zeroGRequestId: text("zerog_request_id"),
     zeroGModel: text("zerog_model"),
+    zeroGVerificationStatus: text("zerog_verification_status").$type<VerificationStatus>(),
     fetchedAt: timestamp("fetched_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [

@@ -83,9 +83,15 @@ async function markDone(post: SourcePostRow, classification: Classification, tra
       classification,
       zeroGRequestId: trace.requestId,
       zeroGModel: trace.model,
+      zeroGVerificationStatus: trace.verificationStatus,
     })
     .where(eq(sourcePosts.id, post.id));
 }
+
+const NOTES: Partial<Record<Classification, string>> = {
+  commentary: "Commentary, not a trade setup.",
+  revision_candidate: "Revision candidate for team review.",
+};
 
 async function markFailed(post: SourcePostRow, err: unknown) {
   const requestId =
@@ -146,7 +152,7 @@ async function processOriginal(post: SourcePostRow): Promise<ProcessResult> {
       trace,
       note:
         classification === "commentary"
-          ? "Commentary, not a trade setup."
+          ? NOTES.commentary!
           : "Looks like a revision, but not of a setup we track.",
     };
   }
@@ -267,11 +273,21 @@ async function storedResult(post: SourcePostRow): Promise<ProcessResult> {
     .select()
     .from(setupVersions)
     .where(and(eq(setupVersions.sourcePostId, post.id), ne(setupVersions.kind, "initial")));
+  const classification = post.classification ?? "commentary";
   return {
-    classification: post.classification ?? "commentary",
+    classification,
     setupId: setup?.id ?? version?.setupId ?? null,
     candidateVersionId: version?.reviewStatus === "pending" ? version.id : null,
-    trace: null,
-    note: null,
+    trace:
+      post.zeroGRequestId && post.zeroGModel
+        ? {
+            model: post.zeroGModel,
+            requestId: post.zeroGRequestId,
+            chatId: null,
+            providerAddress: null,
+            verificationStatus: post.zeroGVerificationStatus ?? "unverified",
+          }
+        : null,
+    note: NOTES[classification] ?? null,
   };
 }
