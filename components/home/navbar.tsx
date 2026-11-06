@@ -23,10 +23,8 @@ export function Wordmark({ href = "/" }: { href?: string }) {
 }
 
 const links = [
-  { href: "#how-it-works", label: "How it works" },
-  { href: "#example", label: "Example" },
-  { href: "#powers", label: "Stack" },
-  { href: "#faq", label: "FAQ" },
+  { href: "/", label: "Home" },
+  { href: "/terminal", label: "Terminal" },
 ];
 
 export function Navbar() {
@@ -52,13 +50,13 @@ export function Navbar() {
         <Wordmark />
         <div className="hidden items-center gap-1 rounded-full border bg-card/50 p-1 text-sm md:flex">
           {links.map((link) => (
-            <a
+            <Link
               key={link.href}
               href={link.href}
               className="rounded-full px-4 py-1.5 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
             >
               {link.label}
-            </a>
+            </Link>
           ))}
         </div>
         <div className="flex items-center gap-2">
@@ -83,14 +81,14 @@ export function Navbar() {
       {open && (
         <div className="animate-in fade-in slide-in-from-top-2 border-t px-4 pb-4 md:hidden">
           {links.map((link) => (
-            <a
+            <Link
               key={link.href}
               href={link.href}
               onClick={() => setOpen(false)}
               className="block border-b py-3.5 text-sm text-muted-foreground last:border-0 hover:text-foreground"
             >
               {link.label}
-            </a>
+            </Link>
           ))}
         </div>
       )}

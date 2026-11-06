@@ -104,15 +104,13 @@
   color: var(--subtle);
 }
 
-/* Halftone dot texture used by the terminal. */
-@utility bg-halftone {
-  background-image: radial-gradient(circle, oklch(0 0 0 / 22%) 0.8px, transparent 1.2px);
-  background-size: 4px 4px;
+/* Blinking caret for the terminal prompt. */
+@keyframes blink {
+  50% { opacity: 0; }
 }
 
-@keyframes wave {
-  0%, 100% { transform: scaleY(0.35); }
-  50% { transform: scaleY(1); }
+@utility caret-blink {
+  animation: blink 1.1s steps(1) infinite;
 }
 
 @keyframes pulse-dot {

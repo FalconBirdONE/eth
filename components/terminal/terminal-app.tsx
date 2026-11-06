@@ -1,6 +1,7 @@
 "use client";
 import { useState, useSyncExternalStore } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { motion } from "motion/react";
 import { toast } from "sonner";
 import { Search } from "lucide-react";
@@ -15,6 +16,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Wordmark } from "../home/navbar";
+import { EthereumMark } from "../home/icons";
 import { formatPrice } from "@/lib/example-setup";
 import { terminalSetups, type TradeSetup } from "@/lib/terminal-data";
 import { useDemoOrders } from "@/lib/demo-orders";
@@ -117,7 +119,7 @@ export function TerminalApp() {
     <div className="relative isolate min-h-screen font-mono text-sm">
       <div
         aria-hidden="true"
-        className="bg-halftone pointer-events-none absolute inset-x-0 top-0 -z-10 h-[560px] [mask-image:radial-gradient(ellipse_45%_60%_at_50%_10%,black_20%,transparent_75%)]"
+        className="bg-grid pointer-events-none absolute inset-x-0 top-0 -z-10 h-[560px]"
       />
       <a
         className="sr-only z-[60] rounded-[3px] bg-primary px-3 py-2 text-primary-foreground focus:not-sr-only focus:fixed focus:top-3 focus:left-3"
@@ -152,6 +154,9 @@ export function TerminalApp() {
             ))}
           </div>
           <div className="ml-auto flex items-center gap-2.5">
+            <span className="hidden h-8 items-center gap-2 rounded-[3px] border px-2.5 text-[10px] tracking-[0.1em] text-muted-foreground uppercase sm:inline-flex [&_svg]:h-3.5 [&_svg]:w-auto">
+              <EthereumMark /> Base · 8453
+            </span>
             <div className="flex overflow-hidden rounded-[3px] border border-border-strong">
               <span aria-current="true" className={cn(segment, "bg-primary text-primary-foreground")}>
                 Demo
@@ -176,15 +181,25 @@ export function TerminalApp() {
       <main id="terminal-main" className="mx-auto max-w-[1192px] px-4 pb-20 sm:px-6 xl:px-0">
         {/* analyze */}
         <div className="mx-auto max-w-[680px] pt-14 pb-11 sm:pt-24">
-          <p className={cn(label, "mb-2.5 text-center")}>{"// Analyze an X post"}</p>
+          <p className={cn(label, "mb-2.5 flex items-center justify-between")}>
+            <span>{"// Analyze an X post"}</span>
+            <span className="hidden sm:inline">Post → entry · target · evidence</span>
+          </p>
           <button
             type="button"
             onClick={() => setSampleOpen(true)}
             aria-haspopup="dialog"
-            className="flex h-[54px] w-full items-center gap-2.5 rounded-full border bg-card px-5 text-left font-sans text-base text-subtle transition-colors hover:border-border-strong"
+            className="group flex h-[58px] w-full items-center gap-3 rounded-[3px] border border-foreground bg-foreground px-4 text-left text-sm text-background/55 shadow-[4px_4px_0_0_var(--border-strong)] transition-[transform,box-shadow] hover:-translate-x-px hover:-translate-y-px hover:shadow-[5px_5px_0_0_var(--border-strong)]"
           >
-            <Search className="size-[18px]" aria-hidden="true" />
-            Paste a post link — or try the sample
+            <span className="text-success">❯</span>
+            <span className="truncate">
+              setup analyze <span className="text-background/35">x.com/…/status/…</span>
+            </span>
+            <span aria-hidden="true" className="caret-blink h-4 w-2 shrink-0 bg-background/70" />
+            <span className="ml-auto hidden items-center gap-2 text-[10px] tracking-[0.14em] uppercase sm:flex">
+              <Search className="size-3.5" aria-hidden="true" /> Try sample
+              <kbd className="rounded-[3px] border border-background/25 px-1.5 py-0.5 text-background/70">↵</kbd>
+            </span>
           </button>
         </div>
 
@@ -232,17 +247,23 @@ export function TerminalApp() {
                 </div>
               </div>
               <div className={cn(panel, "hidden overflow-hidden lg:block")}>
-                <div className="flex h-[84px] items-center justify-center gap-[3px] bg-foreground px-3" aria-hidden="true">
-                  {Array.from({ length: 26 }, (_, i) => (
-                    <span
-                      key={i}
-                      className="h-full w-[5px] origin-center bg-[radial-gradient(circle,oklch(1_0_0/80%)_0.8px,transparent_1.2px)] [background-size:4px_4px]"
-                      style={{ animation: `wave ${1.6 + (i % 5) * 0.25}s ease-in-out ${i * 0.08}s infinite` }}
-                    />
-                  ))}
+                <div className="bg-foreground px-3.5 pt-3 pb-3.5 text-background">
+                  <p className="text-[10px] tracking-[0.18em] uppercase opacity-55">Signal / noise</p>
+                  <p className="mt-1 font-sans text-[32px] leading-none font-bold tabular-nums">
+                    {clearCount}
+                    <span className="opacity-35">/{terminalSetups.length}</span>
+                  </p>
+                  <div className="mt-3 flex gap-[3px]" aria-hidden="true">
+                    {terminalSetups.map((s) => (
+                      <span
+                        key={s.id}
+                        className={cn("h-2 flex-1 rounded-[1px]", s.kind === "actionable" ? "bg-success" : "bg-background/20")}
+                      />
+                    ))}
+                  </div>
                 </div>
                 <div className="grid gap-1 px-3.5 py-3">
-                  <p className={cn(label, "mb-1 text-muted-foreground")}>Signal integrity</p>
+                  <p className={cn(label, "mb-1 text-muted-foreground")}>Breakdown</p>
                   {[
                     ["Indexed", terminalSetups.length],
                     ["Clear setups", clearCount],
@@ -264,12 +285,10 @@ export function TerminalApp() {
             <section aria-label="Setup feed" className="min-w-0">
               <div className="mb-4 flex flex-wrap items-center gap-x-7 gap-y-2 border-b pb-3.5">
                 <span className="inline-flex h-10 items-center gap-2.5 rounded-full border border-border-strong bg-card pr-4 pl-1.5">
-                  <span className="flex size-7 items-center justify-center rounded-full bg-foreground text-[9px] font-semibold text-background">
-                    0G
-                  </span>
+                  <Image src="/logos/0g.jpg" alt="0G" width={28} height={28} className="size-7 rounded-full border object-cover" />
                   <span className="leading-none">
-                    <strong className="block font-sans text-[13px] font-extrabold tracking-[0.02em]">EVIDENCE-FIRST</strong>
-                    <span className="text-[9px] tracking-[0.18em] text-muted-foreground uppercase">Post → setup · strip the noise</span>
+                    <strong className="block font-sans text-[13px] font-semibold">Parsed by 0G</strong>
+                    <span className="text-[9px] tracking-[0.18em] text-muted-foreground uppercase">Every term cites its source</span>
                   </span>
                 </span>
                 <span className="text-[13px] tabular-nums">{visible.length} posts</span>
@@ -337,6 +356,31 @@ export function TerminalApp() {
           </div>
         )}
       </main>
+
+      <footer className="sticky bottom-0 z-30 border-t bg-background/85 backdrop-blur-md">
+        <div className="flex h-9 items-center gap-4 overflow-x-auto px-4 text-[10px] tracking-[0.12em] whitespace-nowrap text-muted-foreground uppercase sm:px-6">
+          <span className="flex items-center gap-2">
+            <span className="live-dot" /> Sample feed
+          </span>
+          <span className="hidden sm:inline">Base · chain 8453</span>
+          <span className="hidden md:inline">{orders.length} {orders.length === 1 ? "order" : "orders"} · local only</span>
+          <span className="ml-auto flex items-center gap-3">
+            <span className="hidden sm:inline">Powered by</span>
+            {(
+              [
+                ["/logos/0g.jpg", "0G"],
+                ["/logos/uniswap.png", "Uniswap"],
+                ["/logos/definitive.png", "Definitive"],
+              ] as const
+            ).map(([src, name]) => (
+              <span key={name} className="flex items-center gap-1.5">
+                <Image src={src} alt="" width={16} height={16} className="size-4 rounded-[3px] object-cover grayscale" />
+                {name}
+              </span>
+            ))}
+          </span>
+        </div>
+      </footer>
 
       <Dialog open={sampleOpen} onOpenChange={setSampleOpen}>
         <DialogContent className="rounded-[3px] font-mono sm:max-w-md">

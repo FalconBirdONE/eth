@@ -19,7 +19,7 @@ export function Eyebrow({ children, className }: { children: ReactNode; classNam
   );
 }
 
-/** "● LABEL ━━━━━━━━ value" row, styled after a resolution track. */
+/** "● LABEL ──────● value" row: a hairline leader ending in a node. */
 export function Track({
   name,
   filled = true,
@@ -35,9 +35,9 @@ export function Track({
         <span className={cn("size-[7px] rounded-full", filled ? "bg-success" : "bg-border-strong")} />
         {name}
       </span>
-      <span className="h-[5px] flex-1 rounded-full border bg-muted p-px">
+      <span className="relative h-px flex-1 bg-border">
         {filled && (
-          <span className="block h-full rounded-full bg-[repeating-linear-gradient(90deg,var(--muted-foreground)_0_2px,transparent_2px_4px)]" />
+          <span className="absolute inset-y-0 left-0 right-0 bg-foreground/60 after:absolute after:-top-[3px] after:right-0 after:size-[7px] after:rounded-full after:border after:border-foreground after:bg-card" />
         )}
       </span>
       <span className="text-right font-semibold tracking-[0.04em] tabular-nums">{children}</span>

@@ -89,13 +89,13 @@ export function FeedCard({
         panel,
         "flex gap-3.5 p-5 transition-[border-color,box-shadow] duration-200",
         selected
-          ? "border-foreground shadow-[0_1px_0_0_var(--foreground)]"
+          ? "border-foreground shadow-[inset_3px_0_0_0_var(--foreground),4px_4px_0_0_var(--border)]"
           : "cursor-pointer hover:border-border-strong",
       )}
     >
       <span
         aria-hidden="true"
-        className="bg-halftone hidden size-[46px] shrink-0 items-center justify-center rounded-full border border-border-strong bg-muted font-sans text-base font-semibold sm:flex"
+        className="hidden size-[42px] shrink-0 items-center justify-center rounded-[3px] bg-foreground font-sans text-base font-semibold text-background sm:flex"
       >
         D
       </span>
