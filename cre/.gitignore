@@ -1,0 +1,7 @@
+node_modules/
+contracts/out/
+binary.wasm.br.b64
+.cre_build_tmp.js
+*.wasm
+*.env
+.env*
