@@ -320,3 +320,22 @@ test("processing a stored post again is a no-op", opts, async () => {
   assert.equal(r.trace?.verificationStatus, "verified", "stored trace is returned");
   assert.equal(zeroGCalls, calls);
 });
+
+test("a pasted post from an untracked account is analyzed but stays out of the feed", opts, async () => {
+  const stranger = { ...tweet("Bidding $ETH at $2,400 here too."), author_id: "999" };
+  zeroG.set("$2,400 here too", { ...actionable, evidence: { ...actionable.evidence, side: "Bidding", entry_condition: "Bidding $ETH at" } });
+  const row = await m.upsertSourcePost({
+    id: stranger.id,
+    authorId: "999",
+    authorUsername: "someone_else",
+    text: stranger.text,
+    createdAt: stranger.created_at,
+    conversationId: null,
+    inReplyToPostId: null,
+    raw: stranger,
+  });
+  const r = await m.processPost(row);
+  assert.ok(r.setupId);
+  assert.ok(await m.getSetupCard(r.setupId!), "detail still works");
+  assert.equal((await m.listSetupCards()).some((c) => c.setupId === r.setupId), false);
+});

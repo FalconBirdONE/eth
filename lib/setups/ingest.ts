@@ -10,7 +10,7 @@ import { and, asc, eq, inArray, lt } from "drizzle-orm";
 import { ingestState, setups, sourcePosts } from "@/db/schema";
 import { getDb } from "@/lib/db";
 import { getPosts, searchRecentByAuthor, XApiError } from "@/lib/x/client";
-import { RECENT_SEARCH_KEY_PREFIX } from "./cards";
+import { RECENT_SEARCH_KEY_PREFIX, trackedCreators } from "./cards";
 import { MAX_EXTRACTION_ATTEMPTS, processPost } from "./pipeline";
 
 const AVAILABILITY_KEY = "x:availability";
@@ -24,13 +24,6 @@ export interface IngestReport {
   creators: { username: string; fetched: number; stored: number; error?: string }[];
   extracted: { postId: string; classification?: string; requestId?: string; error?: string }[];
   availability: { checked: number; unavailable: string[] } | null;
-}
-
-export function trackedCreators(): string[] {
-  return (process.env.X_CREATOR_USERNAMES ?? "")
-    .split(",")
-    .map((s) => s.trim().replace(/^@/, ""))
-    .filter(Boolean);
 }
 
 async function syncCreator(username: string) {
