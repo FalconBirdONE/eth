@@ -24,18 +24,25 @@ const evidenceSchema = z
   .partial()
   .default({});
 
+/** Lowercases and trims, and maps common synonyms, before enum checks. */
+function looseEnum<T extends string>(values: readonly [T, ...T[]], synonyms: Record<string, T> = {}) {
+  return z
+    .preprocess((v) => {
+      if (typeof v !== "string") return v;
+      const key = v.trim().toLowerCase().replace(/[\s-]+/g, "_");
+      return synonyms[key] ?? (key === "" || key === "null" ? null : key);
+    }, z.enum(values).nullable().optional())
+    .transform((v) => v ?? null);
+}
+
 const termsShape = {
   asset: nullableText,
-  side: z
-    .enum(["buy", "sell"])
-    .nullable()
-    .optional()
-    .transform((v) => v ?? null),
-  entry_condition: z
-    .enum(["at", "at_or_below", "at_or_above", "market", "unclear"])
-    .nullable()
-    .optional()
-    .transform((v) => v ?? null),
+  side: looseEnum(["buy", "sell"], { long: "buy", short: "sell" }),
+  entry_condition: looseEnum(["at", "at_or_below", "at_or_above", "market", "unclear"], {
+    below: "at_or_below",
+    above: "at_or_above",
+    limit: "at",
+  }),
   entry_price: nullableText,
   reference_currency: nullableText,
   target: nullableText,
@@ -45,18 +52,18 @@ const termsShape = {
 };
 
 export const extractionSchema = z.object({
-  classification: z.enum([
-    "actionable",
-    "commentary",
-    "ambiguous",
-    "unsupported",
-    "revision_candidate",
-  ]),
+  classification: looseEnum(
+    ["actionable", "commentary", "ambiguous", "unsupported", "revision_candidate"],
+    { revision: "revision_candidate" },
+  ).pipe(z.enum(["actionable", "commentary", "ambiguous", "unsupported", "revision_candidate"])),
   ...termsShape,
 });
 
 export const revisionSchema = z.object({
-  revision_type: z.enum(["update", "withdrawal", "none"]),
+  revision_type: looseEnum(["update", "withdrawal", "none"], {
+    revision: "update",
+    withdrawn: "withdrawal",
+  }).pipe(z.enum(["update", "withdrawal", "none"])),
   ...termsShape,
 });
 
@@ -86,7 +93,8 @@ const FIELD_RULES = `Fields (use null when the post does not state it; never gue
 - evidence: for every non-null field above, the exact substring of the post text that supports it, copied character for character (keep the original casing, symbols and commas). Never paraphrase.
 - reasoning: one short sentence explaining the classification.
 
-Reply with a single JSON object with exactly these keys and nothing else.`;
+Reply with a single JSON object with exactly these keys and nothing else:
+{"classification": "...", "asset": null, "side": null, "entry_condition": null, "entry_price": null, "reference_currency": null, "target": null, "invalidation": null, "evidence": {"asset": null, "side": null, "entry_condition": null, "entry_price": null, "reference_currency": null, "target": null, "invalidation": null}, "reasoning": "..."}`;
 
 const EXTRACT_SYSTEM = `You extract trade setups from social media posts by a crypto trading creator.
 
@@ -112,7 +120,7 @@ For "update", return the complete revised setup: take changed fields from the re
 
 Evidence phrases may be quoted from either the original post or the reply.
 
-${FIELD_RULES.replace("Reply with a single JSON object", "Include revision_type. Reply with a single JSON object")}`;
+${FIELD_RULES.replace('{"classification": "...",', '{"revision_type": "...",')}`;
 
 /** Models sometimes wrap JSON in prose or code fences; take the outer object. */
 export function parseJsonObject(content: string): unknown {
