@@ -288,3 +288,20 @@ export const analyzeFixtures: { actionable: AnalyzeResponse; commentary: Analyze
     zeroG: trace("7d3c8056-91a3-44b5-9061-27384950a008"),
   },
 };
+
+/** GET /api/setups/[id] for a setup with a withdrawal awaiting team review. */
+export const pendingWithdrawalDetailFixture: SetupDetailResponse = {
+  setup: {
+    id: PENDING_ID,
+    creator: CREATOR,
+    sourcePostId: pendingV1.sourcePostId,
+    sourcePostUrl: pendingV1.sourcePostUrl,
+    sourceText: SOURCE_TEXT,
+    sourceAvailability: "available",
+    status: "active",
+    currentVersionId: pendingV1.id,
+    versions: [pendingV1, pendingWithdrawal],
+    createdAt: pendingV1.createdAt,
+  },
+  card: pendingWithdrawalSetupCard,
+};
