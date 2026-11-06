@@ -7,6 +7,7 @@ import { getSetupCard } from "@/lib/setups/cards";
 import { processPost, upsertSourcePost } from "@/lib/setups/pipeline";
 import { getPost, parsePostUrl, postUrl, XApiError } from "@/lib/x/client";
 import { ZeroGError } from "@/lib/zerog/client";
+import { ExtractionParseError } from "@/lib/zerog/extract";
 
 export const maxDuration = 60;
 
@@ -49,6 +50,12 @@ export async function POST(request: Request) {
     if (err instanceof ZeroGError) {
       return Response.json(
         { error: "0G extraction failed", detail: err.message, requestId: err.requestId },
+        { status: 502 },
+      );
+    }
+    if (err instanceof ExtractionParseError) {
+      return Response.json(
+        { error: "0G returned an invalid extraction", detail: err.message, requestId: err.trace.requestId },
         { status: 502 },
       );
     }
