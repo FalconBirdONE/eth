@@ -1,13 +1,14 @@
+import Link from "next/link";
 import { primaryAction } from "@/lib/example-setup";
 import { ArrowIcon, TerminalMark } from "./icons";
-export function Wordmark() {
+export function Wordmark({ href = "/" }: { href?: string }) {
   return (
-    <a href="#" className="wordmark" aria-label="Setup Terminal home">
+    <Link href={href} className="wordmark" aria-label="Setup Terminal home">
       <TerminalMark />
       <span>
         Setup<span className="wordmark-light"> Terminal</span>
       </span>
-    </a>
+    </Link>
   );
 }
 export function Navbar() {

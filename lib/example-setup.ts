@@ -18,5 +18,6 @@ export const exampleSetup = {
   status: "Open",
 } as const;
 
-export const formatPrice = (price: number) => price.toLocaleString("en-US");
-export const primaryAction = { label: "Explore the example", href: "#example" };
+export const formatPrice = (price: number, maximumFractionDigits = 6) =>
+  price.toLocaleString("en-US", { maximumFractionDigits });
+export const primaryAction = { label: "Open Terminal", href: "/terminal" };

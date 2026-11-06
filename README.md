@@ -1,36 +1,31 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Setup Terminal
 
-## Getting Started
+Next.js + TypeScript + Tailwind. `/` introduces the product; `/terminal` provides a browser-local demo feed and trade review. No login, wallet, API credentials, or backend is required.
 
-First, run the development server:
-
-```bash
+```sh
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm run lint
+npm run build
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open http://localhost:3000/terminal.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Demo data and order lifecycle
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- `lib/terminal-data.ts` contains the three typed feed fixtures, setup versions, demo network, illustrative swap assumptions, and bundled v1 order. The actionable fixture reuses `lib/example-setup.ts` so the homepage and terminal agree.
+- `lib/demo-orders.ts` validates and persists visitor-created simulations under `setup-terminal.demo-orders.v1`. It stores a snapshot of price, size, creator entry at review, and setup version. Viewing a different creator version does not mutate saved orders.
+- Reset demo removes visitor simulations and retains the bundled reference order. Orders are local to the browser and origin; they do not execute or reserve funds.
+- The feed and selected setup are separate panes on desktop. Below 700 px, the feed opens first and a selection opens the detail view. My Orders is a local view.
 
-## Learn More
+## Integration boundaries
 
-To learn more about Next.js, take a look at the following resources:
+`TradeProvider` in `lib/trade-provider.ts` separates provider quotes from creator entries and user-selected limits. `TradeReviewRequest` is a discriminated union for swap and limit reviews. `TradeReview` accepts a provider, and its `onSave` callback receives the reviewed terms. The current callback only saves a simulation.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+The shipped adapter returns deterministic **illustrative** Uniswap quote amounts. Its environment is `demo`, its network label is Base, and all live execution capabilities are false. No transaction or wallet call is implemented. A network name alone must never enable execution. A connected testnet adapter may supply real Uniswap quotes/swaps only with configured execution and user confirmation; Flash previews on testnet remain simulated. Mainnet Flash signing additionally requires a configured provider and wallet confirmation flow before execution can be enabled. The current UI deliberately disables submission for non-demo providers until that execution flow is connected.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+`TradeSetup` supports an optional real source URL and extraction verification metadata. `EvidenceDisclosure` displays request IDs only when supplied. Sample data does not fabricate X links, transaction hashes, or verification IDs.
 
-## Deploy on Vercel
+## Shared UI
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+The terminal shares the wordmark, tabular price formatting, extraction disclosure, and `components/shared/price-rail.tsx` with the homepage. The homepage CTA points to `/terminal`. Terminal-specific styling lives in `app/terminal/terminal.css`.
