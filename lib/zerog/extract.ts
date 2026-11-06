@@ -109,16 +109,16 @@ Historical posts ("I bought at 2,100 last week", "that long hit target") are com
 
 ${FIELD_RULES}`;
 
-const REVISION_SYSTEM = `You compare a crypto trading creator's original setup post with the creator's own later reply to it, and decide whether the reply revises the setup.
+const REVISION_SYSTEM = `You decide whether a crypto trading creator's latest reply revises their setup. You get the setup's current terms as JSON, the earlier posts in the thread (oldest first), and the creator's new reply.
 
 revision_type:
-- "update": the reply explicitly changes the entry, target, invalidation, side or asset of the original setup.
+- "update": the reply explicitly changes the entry, target, invalidation, side or asset of the setup.
 - "withdrawal": the reply explicitly cancels, invalidates or withdraws the setup ("scrap that", "no longer valid", "closing this idea").
 - "none": the reply does not change the setup (thanks, commentary, progress updates).
 
-For "update", return the complete revised setup: take changed fields from the reply and keep unchanged fields from the original. For "withdrawal" and "none", return the original setup's fields.
+For "update", return the complete revised setup: take changed fields from the reply and keep every unchanged field exactly as in the current terms. For "withdrawal" and "none", return the current terms unchanged.
 
-Evidence phrases may be quoted from either the original post or the reply.
+Evidence phrases may be quoted from any of the posts, including the reply.
 
 ${FIELD_RULES.replace('{"classification": "...",', '{"revision_type": "...",')}`;
 
@@ -162,16 +162,29 @@ export async function extractSetup(postText: string): Promise<Extraction> {
   return { classification: parsed.classification, terms: parsed, trace };
 }
 
+export interface RevisionContext {
+  /** Earlier posts in the thread, oldest first: the original, then accepted revisions. */
+  earlierPosts: string[];
+  /** The setup's current terms in extraction field names, or null for the original's. */
+  currentTerms: Record<string, unknown> | null;
+}
+
 export async function extractRevision(
-  originalText: string,
+  context: RevisionContext,
   replyText: string,
 ): Promise<RevisionExtraction> {
+  const earlier = context.earlierPosts
+    .map((text, i) => `Earlier post ${i + 1}:\n"""\n${text}\n"""`)
+    .join("\n\n");
+  const terms = context.currentTerms
+    ? `Current setup terms:\n${JSON.stringify(context.currentTerms)}\n\n`
+    : "";
   const { parsed, trace } = await run(
     [
       { role: "system", content: REVISION_SYSTEM },
       {
         role: "user",
-        content: `Original post:\n"""\n${originalText}\n"""\n\nCreator's reply:\n"""\n${replyText}\n"""`,
+        content: `${terms}${earlier}\n\nCreator's new reply:\n"""\n${replyText}\n"""`,
       },
     ],
     revisionSchema,

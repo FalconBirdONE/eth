@@ -32,7 +32,10 @@ async function main() {
         }
         line = `${classification} copyable=${v.copyable} entry=${v.entryPrice} | ${trace.model} ${trace.requestId} ${trace.verificationStatus}`;
       } else {
-        const { revisionType, terms, trace } = await extractRevision(fixture.original, fixture.text);
+        const { revisionType, terms, trace } = await extractRevision(
+          { earlierPosts: [fixture.original], currentTerms: null },
+          fixture.text,
+        );
         const v = validateTerms(terms, `${fixture.original}\n${fixture.text}`, {
           actionable: revisionType === "update",
           verificationStatus: trace.verificationStatus,

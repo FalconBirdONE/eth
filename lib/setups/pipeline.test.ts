@@ -38,6 +38,7 @@ const x = {
 type Answer = Record<string, unknown> | "fail";
 const zeroG = new Map<string, Answer>();
 let zeroGCalls = 0;
+const prompts: string[] = [];
 
 const actionable = {
   classification: "actionable",
@@ -93,6 +94,7 @@ globalThis.fetch = async (input, init) => {
     const body = JSON.parse(String(init?.body));
     assert.equal(body.verify_tee, true);
     const prompt: string = body.messages.at(-1).content;
+    prompts.push(prompt);
     // Latest key first: revision prompts also contain the original post.
     const key = [...zeroG.keys()].reverse().find((k) => prompt.includes(k));
     const answer = key ? zeroG.get(key)! : { classification: "commentary", evidence: {} };
@@ -207,8 +209,10 @@ test("a failed extraction is retried on the next run", opts, async () => {
   assert.equal(second.extracted.find((e) => e.postId === flaky.id)?.classification, "actionable");
 });
 
+let revisionReply: ReturnType<typeof tweet>;
+
 test("a creator reply becomes a candidate, and accepting it moves only the pointer", opts, async () => {
-  const reply = tweet("Update: moving my $ETH entry down to $2,350. Target and invalidation unchanged.", original.id);
+  const reply = (revisionReply = tweet("Update: moving my $ETH entry down to $2,350. Target and invalidation unchanged.", original.id));
   x.search.push(reply);
   zeroG.set("moving my $ETH entry down", {
     revision_type: "update",
@@ -237,6 +241,37 @@ test("a creator reply becomes a candidate, and accepting it moves only the point
   assert.equal(card.previousVersion?.entryPrice, "2400", "original version is not overwritten");
   assert.deepEqual(card.changedFields, ["entryPrice"]);
   assert.equal(card.copyable, true);
+});
+
+test("a reply to a revision revises the same setup from its current terms", opts, async () => {
+  const reply = tweet("And raising the target, target now 2,900.", revisionReply.id);
+  x.search.push(reply);
+  zeroG.set("target now 2,900", {
+    revision_type: "update",
+    ...actionable,
+    entry_price: "2350",
+    target: "2900",
+    // Only the changed field is quoted; unchanged ones keep earlier quotes.
+    evidence: { target: "target now 2,900" },
+  });
+  await m.runIngest();
+
+  const prompt = prompts.at(-1)!;
+  assert.match(prompt, /"entry_price":"2350"/, "prompt carries the current terms");
+  assert.match(prompt, /moving my \$ETH entry down/, "prompt carries the thread");
+
+  const cards = await m.listSetupCards();
+  assert.equal(cards.filter((c) => c.sourcePostUrl.endsWith(reply.id)).length, 0, "not a new setup");
+  const card = cards.find((c) => c.sourcePostUrl.endsWith(original.id))!;
+  const pending = (await m.loadSetup(card.setupId))!.setup.versions.find((v) => v.reviewStatus === "pending")!;
+  assert.equal(pending.entryPrice, "2350");
+  assert.equal(pending.target, "2900");
+  assert.equal(pending.copyable, true, pending.validationErrors.join("; "));
+
+  await m.reviewCandidate(card.setupId, pending.id, "accept");
+  const after = (await m.getSetupCard(card.setupId))!;
+  assert.equal(after.currentVersion.versionNumber, 3);
+  assert.deepEqual(after.changedFields, ["target"]);
 });
 
 test("an accepted withdrawal disables copying", opts, async () => {

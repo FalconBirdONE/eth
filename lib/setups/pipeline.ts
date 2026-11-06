@@ -1,7 +1,7 @@
 // Turns stored X posts into setups and setup versions. Shared by the ingest
 // cron and the paste-a-link analyze route so both produce identical results.
 
-import { and, eq, ne, sql } from "drizzle-orm";
+import { and, asc, eq, ne, sql } from "drizzle-orm";
 import { setups, setupVersions, sourcePosts } from "@/db/schema";
 import { getDb } from "@/lib/db";
 import type { Classification, ZeroGTrace } from "@/lib/shared/types";
@@ -83,7 +83,7 @@ async function markDone(post: SourcePostRow, classification: Classification, tra
     .set({
       extractionStatus: "done",
       extractionError: null,
-      extractionAttempts: post.extractionAttempts + 1,
+      extractionAttempts: sql`${sourcePosts.extractionAttempts} + 1`,
       classification,
       zeroGRequestId: trace.requestId,
       zeroGModel: trace.model,
@@ -105,7 +105,7 @@ async function markFailed(post: SourcePostRow, err: unknown) {
     .update(sourcePosts)
     .set({
       extractionStatus: "failed",
-      extractionAttempts: post.extractionAttempts + 1,
+      extractionAttempts: sql`${sourcePosts.extractionAttempts} + 1`,
       extractionError: (err instanceof Error ? err.message : String(err)).slice(0, 1000),
       ...(requestId
         ? { zeroGRequestId: requestId, zeroGRequestIds: appendRequestId(requestId) }
@@ -115,13 +115,13 @@ async function markFailed(post: SourcePostRow, err: unknown) {
 }
 
 /**
- * Finds the setup a reply revises: the replied-to post must be stored, have a
- * setup, and share the reply's author. Fetches the parent from X when it has
- * not been ingested yet (common for pasted links).
+ * Finds the setup a reply revises. The replied-to post must share the reply's
+ * author and be either the setup's original post or a creator reply already
+ * stored as one of its versions (so a thread of updates stays on one setup).
+ * Fetches the parent from X when it has not been ingested yet (common for
+ * pasted links).
  */
-async function findRevisedSetup(
-  reply: SourcePostRow,
-): Promise<{ setup: SetupRow; parent: SourcePostRow } | null> {
+async function findRevisedSetup(reply: SourcePostRow): Promise<SetupRow | null> {
   if (!reply.inReplyToPostId) return null;
   const db = getDb();
 
@@ -139,7 +139,14 @@ async function findRevisedSetup(
   if (parent.extractionStatus !== "done") await processPost(parent);
 
   const [setup] = await db.select().from(setups).where(eq(setups.sourcePostId, parent.id));
-  return setup ? { setup, parent } : null;
+  if (setup) return setup;
+
+  const [viaVersion] = await db
+    .select({ setup: setups })
+    .from(setupVersions)
+    .innerJoin(setups, eq(setups.id, setupVersions.setupId))
+    .where(and(eq(setupVersions.sourcePostId, parent.id), ne(setupVersions.reviewStatus, "rejected")));
+  return viaVersion?.setup ?? null;
 }
 
 async function processOriginal(post: SourcePostRow): Promise<ProcessResult> {
@@ -204,33 +211,79 @@ async function processOriginal(post: SourcePostRow): Promise<ProcessResult> {
   };
 }
 
-async function processReply(
-  reply: SourcePostRow,
-  target: { setup: SetupRow; parent: SourcePostRow },
-): Promise<ProcessResult> {
-  const { revisionType, terms, trace } = await extractRevision(target.parent.text, reply.text);
+type VersionRow = typeof setupVersions.$inferSelect;
+
+/** A version's terms in the extraction's field names, for the revision prompt. */
+function termsOf(v: VersionRow) {
+  return {
+    asset: v.asset,
+    side: v.side,
+    entry_condition: v.entryCondition,
+    entry_price: v.entryPrice,
+    reference_currency: v.referenceCurrency,
+    target: v.target,
+    invalidation: v.invalidation,
+  };
+}
+
+const EVIDENCE_KEYS = {
+  asset: "asset",
+  side: "side",
+  entry_condition: "entryCondition",
+  entry_price: "entryPrice",
+  reference_currency: "referenceCurrency",
+  target: "target",
+  invalidation: "invalidation",
+} as const;
+
+async function processReply(reply: SourcePostRow, setup: SetupRow): Promise<ProcessResult> {
+  const db = getDb();
+  // The thread so far: the original post and every accepted revision, oldest first.
+  const accepted = await db
+    .select({ version: setupVersions, post: sourcePosts })
+    .from(setupVersions)
+    .innerJoin(sourcePosts, eq(sourcePosts.id, setupVersions.sourcePostId))
+    .where(and(eq(setupVersions.setupId, setup.id), eq(setupVersions.reviewStatus, "accepted")))
+    .orderBy(asc(setupVersions.versionNumber));
+  const current = accepted.find((r) => r.version.id === setup.currentVersionId)?.version ?? null;
+  const earlierPosts = [...new Set(accepted.map((r) => r.post.text))];
+
+  const { revisionType, terms, trace } = await extractRevision(
+    { earlierPosts, currentTerms: current ? termsOf(current) : null },
+    reply.text,
+  );
 
   if (revisionType === "none") {
     await markDone(reply, "commentary", trace);
     return {
       classification: "commentary",
-      setupId: target.setup.id,
+      setupId: setup.id,
       candidateVersionId: null,
       trace,
       note: "Creator reply that does not change the setup.",
     };
   }
 
-  // Quotes may come from either post.
-  const validated = validateTerms(terms, `${target.parent.text}\n${reply.text}`, {
+  // A field carried over unchanged keeps the quote that supported it before.
+  if (current) {
+    const before = termsOf(current);
+    for (const key of Object.keys(EVIDENCE_KEYS) as (keyof typeof EVIDENCE_KEYS)[]) {
+      if (!terms.evidence[key] && terms[key] !== null && terms[key] === before[key]) {
+        terms.evidence[key] = current.evidence[EVIDENCE_KEYS[key]] ?? null;
+      }
+    }
+  }
+
+  // Quotes may come from any post in the thread.
+  const validated = validateTerms(terms, [...earlierPosts, reply.text].join("\n"), {
     actionable: revisionType === "update",
     verificationStatus: trace.verificationStatus,
   });
 
-  const [candidate] = await getDb()
+  const [candidate] = await db
     .insert(setupVersions)
     .values({
-      setupId: target.setup.id,
+      setupId: setup.id,
       versionNumber: null,
       kind: revisionType === "withdrawal" ? "withdrawal" : "revision",
       reviewStatus: "pending",
@@ -245,7 +298,7 @@ async function processReply(
   await markDone(reply, "revision_candidate", trace);
   return {
     classification: "revision_candidate",
-    setupId: target.setup.id,
+    setupId: setup.id,
     candidateVersionId: candidate?.id ?? null,
     trace,
     note:
@@ -264,8 +317,8 @@ export async function processPost(post: SourcePostRow): Promise<ProcessResult> {
   if (post.extractionStatus === "done") return storedResult(post);
 
   try {
-    const target = await findRevisedSetup(post);
-    return target ? await processReply(post, target) : await processOriginal(post);
+    const setup = await findRevisedSetup(post);
+    return setup ? await processReply(post, setup) : await processOriginal(post);
   } catch (err) {
     await markFailed(post, err);
     throw err;
