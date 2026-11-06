@@ -9,13 +9,16 @@
 import { and, asc, eq, inArray, lt } from "drizzle-orm";
 import { ingestState, setups, sourcePosts } from "@/db/schema";
 import { getDb } from "@/lib/db";
-import { getPosts, searchRecentByAuthor } from "@/lib/x/client";
+import { getPosts, searchRecentByAuthor, XApiError } from "@/lib/x/client";
 import { RECENT_SEARCH_KEY_PREFIX } from "./cards";
 import { MAX_EXTRACTION_ATTEMPTS, processPost } from "./pipeline";
 
 const AVAILABILITY_KEY = "x:availability";
 const AVAILABILITY_INTERVAL_MS = 10 * 60_000;
 const EXTRACTIONS_PER_RUN = 10;
+// The route allows 60s. Stop starting new extractions after this, so one
+// slow 0G call (45s timeout) still finishes inside the limit.
+const EXTRACTION_BUDGET_MS = 12_000;
 
 export interface IngestReport {
   creators: { username: string; fetched: number; stored: number; error?: string }[];
@@ -36,7 +39,16 @@ async function syncCreator(username: string) {
   const [state] = await db.select().from(ingestState).where(eq(ingestState.key, key));
 
   try {
-    const { posts, newestId } = await searchRecentByAuthor(username, state?.sinceId ?? null);
+    let result;
+    try {
+      result = await searchRecentByAuthor(username, state?.sinceId ?? null);
+    } catch (err) {
+      // Recent Search only covers 7 days; an older cursor is rejected. Search
+      // without it; dedupe by post ID makes the overlap harmless.
+      if (!(err instanceof XApiError && err.status === 400 && state?.sinceId)) throw err;
+      result = await searchRecentByAuthor(username, null);
+    }
+    const { posts, newestId } = result;
 
     const stored = await db.transaction(async (tx) => {
       const inserted = posts.length
@@ -85,7 +97,7 @@ async function syncCreator(username: string) {
   }
 }
 
-async function extractQueued(): Promise<IngestReport["extracted"]> {
+async function extractQueued(startedAt: number): Promise<IngestReport["extracted"]> {
   const queued = await getDb()
     .select()
     .from(sourcePosts)
@@ -100,6 +112,7 @@ async function extractQueued(): Promise<IngestReport["extracted"]> {
 
   const results: IngestReport["extracted"] = [];
   for (const post of queued) {
+    if (Date.now() - startedAt > EXTRACTION_BUDGET_MS) break;
     try {
       const r = await processPost(post);
       results.push({
@@ -170,10 +183,11 @@ export async function recheckAvailability(force = false): Promise<IngestReport["
 }
 
 export async function runIngest(): Promise<IngestReport> {
+  const startedAt = Date.now();
   const creators = [];
   for (const username of trackedCreators()) creators.push(await syncCreator(username));
 
-  const extracted = await extractQueued();
+  const extracted = await extractQueued(startedAt);
 
   let availability: IngestReport["availability"] = null;
   try {
