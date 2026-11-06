@@ -30,14 +30,14 @@ export function OrdersPanel({ orders, onFeed }: { orders: readonly DemoOrder[]; 
       <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
         <div>
           <Eyebrow>Your terms, kept intact</Eyebrow>
-          <h1 id="orders-heading" className="mt-1 text-3xl font-semibold tracking-tight sm:text-4xl">
+          <h1 id="orders-heading" className="mt-1 font-sans text-3xl font-bold tracking-tight">
             My Orders <span className="font-mono text-base text-muted-foreground">{orders.length}</span>
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
             Local simulations. Creator updates never change these saved terms.
           </p>
         </div>
-        <Button variant="outline" type="button" onClick={onFeed}>
+        <Button variant="outline" type="button" onClick={onFeed} className="rounded-sm text-[10px] tracking-[0.18em] uppercase">
           <ArrowLeft /> Back to feed
         </Button>
       </div>
@@ -47,7 +47,7 @@ export function OrdersPanel({ orders, onFeed }: { orders: readonly DemoOrder[]; 
           <TableHeader>
             <TableRow className="hover:bg-transparent">
               {["Order", "Price / output", "Size", "Order source", "Status"].map((h) => (
-                <TableHead key={h} scope="col" className="h-11 px-5 text-xs text-muted-foreground">
+                <TableHead key={h} scope="col" className="h-11 px-5 text-[10px] tracking-[0.18em] text-muted-foreground uppercase">
                   {h}
                 </TableHead>
               ))}
