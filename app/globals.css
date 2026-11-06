@@ -99,6 +99,17 @@
   color: transparent;
 }
 
+/* Halftone dot texture used by the terminal. */
+@utility bg-halftone {
+  background-image: radial-gradient(circle, oklch(1 0 0 / 16%) 1px, transparent 1.4px);
+  background-size: 5px 5px;
+}
+
+@keyframes wave {
+  0%, 100% { transform: scaleY(0.35); }
+  50% { transform: scaleY(1); }
+}
+
 @keyframes pulse-dot {
   0%, 100% { box-shadow: 0 0 0 0 oklch(0.9 0.19 125 / 55%); }
   50% { box-shadow: 0 0 0 6px oklch(0.9 0.19 125 / 0%); }
