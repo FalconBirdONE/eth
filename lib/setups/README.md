@@ -22,6 +22,7 @@ Creator posts on X become setups with versions and evidence, extracted on 0G Pri
 - `GET /api/setups/[id]` returns `SetupDetailResponse` (`{ setup, card }`). Versions are listed accepted first, then pending candidates.
 - `POST /api/analyze` takes `{ url }` and returns `AnalyzeResponse`. A post that was already analyzed returns its stored result and makes no new 0G call.
 - `POST /api/ingest` requires `Authorization: Bearer $CRON_SECRET`. Schedule it about every minute.
+- `GET /api/setups/attestations` returns a compact list of accepted versions, read by the Chainlink CRE attestor (see [cre/README.md](../../cre/README.md)).
 - `POST /api/setups/[id]/review` takes `{ versionId, action: "accept" | "reject" }` and requires `Authorization: Bearer $ADMIN_SECRET`.
 
 Types are in `lib/shared/types.ts`. Fixtures are in `lib/shared/fixtures/setups.ts`.
