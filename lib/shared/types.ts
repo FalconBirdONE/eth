@@ -109,6 +109,11 @@ export interface SetupsResponse {
   lastSyncAt: string | null;
 }
 
+export interface SetupDetailResponse {
+  setup: Setup;
+  card: SetupCard | null;
+}
+
 export interface AnalyzeResponse {
   postId: string;
   postUrl: string;
