@@ -45,7 +45,7 @@ export function SetupPreview({
         <div className="border-b p-5 sm:border-r sm:border-b-0 sm:p-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2.5">
-              <span className="flex size-8 items-center justify-center rounded-full bg-gradient-to-br from-violet to-primary text-xs font-semibold text-primary-foreground">
+              <span className="flex size-8 items-center justify-center rounded-full bg-muted border border-border-strong text-xs font-semibold text-foreground">
                 D
               </span>
               <div className="leading-tight">
