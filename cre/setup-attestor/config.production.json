@@ -1,0 +1,11 @@
+{
+  "schedule": "0 */10 * * * *",
+  "appUrl": "https://YOUR-APP.vercel.app",
+  "maxPerReport": 20,
+  "evm": {
+    "chainSelectorName": "ethereum-testnet-sepolia-base-1",
+    "attestationsAddress": "0x0000000000000000000000000000000000000000",
+    "ethUsdFeedAddress": "0x4aDC67696bA383F43DD60A9e78F2C97Fbbfc7cb1",
+    "gasLimit": "1500000"
+  }
+}

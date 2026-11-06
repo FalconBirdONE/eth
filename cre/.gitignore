@@ -5,3 +5,4 @@ binary.wasm.br.b64
 *.wasm
 *.env
 .env*
+dist/
