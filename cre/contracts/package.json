@@ -1,0 +1,16 @@
+{
+  "name": "setup-attestor-contracts",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build": "bun compile.ts",
+    "test": "bun test"
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "@ethereumjs/vm": "10.1.0",
+    "@types/bun": "1.3.1",
+    "solc": "0.8.30",
+    "viem": "2.34.0"
+  }
+}
