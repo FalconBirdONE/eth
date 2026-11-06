@@ -1,7 +1,7 @@
 // Turns stored X posts into setups and setup versions. Shared by the ingest
 // cron and the paste-a-link analyze route so both produce identical results.
 
-import { and, eq, ne } from "drizzle-orm";
+import { and, eq, ne, sql } from "drizzle-orm";
 import { setups, setupVersions, sourcePosts } from "@/db/schema";
 import { getDb } from "@/lib/db";
 import type { Classification, ZeroGTrace } from "@/lib/shared/types";
@@ -73,6 +73,10 @@ function versionValues(
   };
 }
 
+function appendRequestId(requestId: string) {
+  return sql`${sourcePosts.zeroGRequestIds} || ${JSON.stringify([requestId])}::jsonb`;
+}
+
 async function markDone(post: SourcePostRow, classification: Classification, trace: ZeroGTrace) {
   await getDb()
     .update(sourcePosts)
@@ -84,6 +88,7 @@ async function markDone(post: SourcePostRow, classification: Classification, tra
       zeroGRequestId: trace.requestId,
       zeroGModel: trace.model,
       zeroGVerificationStatus: trace.verificationStatus,
+      zeroGRequestIds: appendRequestId(trace.requestId),
     })
     .where(eq(sourcePosts.id, post.id));
 }
@@ -102,7 +107,9 @@ async function markFailed(post: SourcePostRow, err: unknown) {
       extractionStatus: "failed",
       extractionAttempts: post.extractionAttempts + 1,
       extractionError: (err instanceof Error ? err.message : String(err)).slice(0, 1000),
-      ...(requestId ? { zeroGRequestId: requestId } : {}),
+      ...(requestId
+        ? { zeroGRequestId: requestId, zeroGRequestIds: appendRequestId(requestId) }
+        : {}),
     })
     .where(eq(sourcePosts.id, post.id));
 }

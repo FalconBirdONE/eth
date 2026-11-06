@@ -48,6 +48,8 @@ export const sourcePosts = pgTable(
     zeroGRequestId: text("zerog_request_id"),
     zeroGModel: text("zerog_model"),
     zeroGVerificationStatus: text("zerog_verification_status").$type<VerificationStatus>(),
+    // Every 0G request ID used on this post, including failed attempts.
+    zeroGRequestIds: jsonb("zerog_request_ids").$type<string[]>().notNull().default([]),
     fetchedAt: timestamp("fetched_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [

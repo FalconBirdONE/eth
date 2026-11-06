@@ -34,15 +34,24 @@ async function main() {
       outcome: `${v.kind} ${v.reviewStatus}${v.entryPrice ? ` @ ${v.entryPrice}` : ""}`,
       post: postUrl(post.authorUsername, post.xPostId),
     })),
-    ...posts.map((p) => ({
-      requestId: p.zeroGRequestId!,
-      chatId: null,
-      model: p.zeroGModel,
-      provider: null,
-      verification: p.zeroGVerificationStatus,
-      outcome: p.extractionStatus === "failed" ? "failed extraction" : (p.classification ?? ""),
-      post: postUrl(p.authorUsername, p.xPostId),
-    })),
+    ...posts.flatMap((p) =>
+      (p.zeroGRequestIds.length ? p.zeroGRequestIds : [p.zeroGRequestId!]).map((requestId) => {
+        const latest = requestId === p.zeroGRequestId;
+        return {
+          requestId,
+          chatId: null,
+          model: p.zeroGModel,
+          provider: null,
+          verification: latest ? p.zeroGVerificationStatus : null,
+          outcome: !latest
+            ? "earlier failed attempt"
+            : p.extractionStatus === "failed"
+              ? "failed extraction"
+              : (p.classification ?? ""),
+          post: postUrl(p.authorUsername, p.xPostId),
+        };
+      }),
+    ),
   ].filter((r) => !seen.has(r.requestId) && seen.add(r.requestId));
 
   if (process.argv.includes("--json")) {
