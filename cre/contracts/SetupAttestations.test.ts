@@ -17,6 +17,7 @@ import {
   bytesToHex,
   toHex,
 } from "viem";
+import { encodeAttestations, termsHash, uuidToBytes32 } from "../setup-attestor/workflow";
 
 const { abi, bytecode } = JSON.parse(
   readFileSync(join(import.meta.dir, "out", "SetupAttestations.json"), "utf8"),
@@ -137,5 +138,40 @@ describe("SetupAttestations", () => {
   test("supports the IReceiver interface for the forwarder's ERC165 check", async () => {
     // IReceiver.onReport selector
     expect(await read<boolean>("supportsInterface", ["0x805f2132"])).toBe(true);
+  });
+});
+
+describe("workflow -> contract", () => {
+  test("a report encoded by the setup-attestor workflow is accepted and readable", async () => {
+    const version = {
+      setupId: "5b3f8f9e-1a2b-4c3d-8e9f-0000000000ff",
+      versionId: "a1000000-0000-4000-8000-0000000000ff",
+      versionNumber: 1,
+      kind: "initial" as const,
+      asset: "ETH",
+      side: "buy",
+      entryCondition: "at_or_below",
+      entryPrice: "2400",
+      referenceCurrency: "USD",
+      target: "2800",
+      invalidation: "2250",
+      sourcePostId: "1855000000000000001",
+      zeroGRequestId: "0852f405-6c56-40c2-a800-e6fd70785065",
+      verificationStatus: "unverified" as const,
+    };
+    const payload = encodeAttestations([version], { answer: 223959000000n, updatedAt: 1793961458n });
+    const r = await call(
+      FORWARDER,
+      encodeFunctionData({ abi, functionName: "onReport", args: ["0x", payload] } as never),
+    );
+    expect(r.exceptionError).toBeUndefined();
+
+    const stored = await read<{ termsHash: Hex; verification: number; sourcePostId: string }>(
+      "getAttestation",
+      [uuidToBytes32(version.versionId)],
+    );
+    expect(stored.termsHash).toBe(termsHash(version));
+    expect(stored.verification).toBe(1);
+    expect(stored.sourcePostId).toBe("1855000000000000001");
   });
 });
