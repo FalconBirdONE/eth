@@ -44,7 +44,7 @@ export function HomeExperience() {
           <Button
             asChild
             size="lg"
-            className="h-11 rounded-full px-6 shadow-[0_0_40px_-8px_var(--primary)] transition-shadow hover:shadow-[0_0_50px_-4px_var(--primary)]"
+            className="h-11 rounded-full px-6"
           >
             <Link href={primaryAction.href}>
               {primaryAction.label}
@@ -69,11 +69,7 @@ export function HomeExperience() {
         transition={{ duration: 1, delay: 0.2, ease }}
         className="relative min-w-0"
       >
-        <div
-          aria-hidden="true"
-          className="absolute -inset-8 -z-10 rounded-[3rem] bg-[radial-gradient(closest-side,oklch(0.9_0.19_125/18%),transparent),radial-gradient(closest-side_at_80%_80%,oklch(0.72_0.17_290/18%),transparent)] blur-2xl"
-        />
-        <div className="overflow-hidden rounded-2xl border bg-card/80 shadow-2xl ring-1 ring-white/5 backdrop-blur-xl">
+        <div className="overflow-hidden rounded-2xl border bg-card/80 shadow-[0_24px_60px_-30px_oklch(0_0_0/25%)] backdrop-blur-xl">
           <SetupPreview updated={updated} mode={mode} onModeChange={setMode} />
           <RevisionComparison updated={updated} onToggle={() => setUpdated((value) => !value)} />
         </div>

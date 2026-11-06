@@ -80,7 +80,7 @@ export function OrdersPanel({ orders, onFeed }: { orders: readonly DemoOrder[]; 
                   />
                 </TableCell>
                 <TableCell>
-                  <Badge className="bg-primary/15 text-primary">{order.status}</Badge>
+                  <Badge variant="outline" className="rounded-full border-success-line bg-success-soft text-success">{order.status}</Badge>
                   <small className="mt-1 block text-[11px] text-muted-foreground">Simulated</small>
                 </TableCell>
               </TableRow>

@@ -54,10 +54,6 @@ export default function Home() {
   return (
     <div className="relative isolate overflow-x-clip">
       <div aria-hidden="true" className="bg-grid pointer-events-none absolute inset-x-0 top-0 -z-10 h-[900px]" />
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute top-[-200px] left-1/2 -z-10 h-[600px] w-[1100px] -translate-x-1/2 rounded-full bg-[radial-gradient(closest-side,oklch(0.9_0.19_125/12%),transparent)]"
-      />
       <a
         className="sr-only z-[60] rounded-md bg-primary px-3 py-2 text-primary-foreground focus:not-sr-only focus:fixed focus:top-3 focus:left-3"
         href="#main"
@@ -110,7 +106,7 @@ export default function Home() {
                 <div className="group relative h-full overflow-hidden rounded-2xl border bg-card/50 p-6 transition-all duration-300 hover:-translate-y-1 hover:border-primary/40">
                   <div
                     aria-hidden="true"
-                    className="absolute -top-20 -right-20 size-40 rounded-full bg-primary/10 opacity-0 blur-3xl transition-opacity duration-500 group-hover:opacity-100"
+                    className="absolute -top-20 -right-20 size-40 rounded-full bg-foreground/5 opacity-0 blur-3xl transition-opacity duration-500 group-hover:opacity-100"
                   />
                   <span className="flex size-11 items-center justify-center rounded-xl border bg-background text-primary">
                     <Icon className="size-5" />
@@ -150,7 +146,7 @@ export default function Home() {
             <div aria-hidden="true" className="bg-grid absolute inset-0 opacity-60" />
             <div
               aria-hidden="true"
-              className="absolute -bottom-40 left-1/2 h-80 w-[700px] -translate-x-1/2 rounded-full bg-primary/20 blur-3xl"
+              className="absolute -bottom-40 left-1/2 h-80 w-[700px] -translate-x-1/2 rounded-full bg-foreground/5 blur-3xl"
             />
             <div className="relative flex flex-col items-start justify-between gap-8 md:flex-row md:items-end">
               <div>
@@ -160,7 +156,7 @@ export default function Home() {
               <Button
                 asChild
                 size="lg"
-                className="h-12 rounded-full px-7 text-base shadow-[0_0_40px_-8px_var(--primary)]"
+                className="h-12 rounded-full px-7 text-base"
               >
                 <Link href={primaryAction.href}>
                   {primaryAction.label}

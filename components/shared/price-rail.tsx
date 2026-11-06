@@ -64,7 +64,7 @@ export function PriceRail({
           </strong>
         </div>
         <span className="mt-1.5 w-px flex-1 bg-gradient-to-b from-violet/0 to-violet" />
-        <span className="-mb-1 size-2 rounded-full bg-violet shadow-[0_0_12px_var(--violet)]" />
+        <span className="-mb-1 size-2 rounded-full bg-violet" />
       </div>
 
       {/* follower marker */}
@@ -72,7 +72,7 @@ export function PriceRail({
         className="absolute top-[calc(44%-4px)] z-20 flex w-px flex-col items-center"
         style={{ left: pos(setup.followerPrice) }}
       >
-        <span className="size-2 rounded-full bg-primary shadow-[0_0_14px_var(--primary)]" />
+        <span className="size-2 rounded-full bg-primary" />
         <span className="h-9 w-px bg-gradient-to-b from-primary to-primary/0" />
         <div className="mt-1 text-center whitespace-nowrap text-primary">
           <span className="flex items-center justify-center gap-1.5 text-[10px]">
