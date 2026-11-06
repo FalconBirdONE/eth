@@ -13,14 +13,14 @@ const DB_URL = process.env.TEST_DATABASE_URL;
 const AUTHOR = { id: "1700000000000000001", username: "demo_creator" };
 const ORIGINAL = "New setup: bidding $ETH at $2,400. Target 2,800, invalidation below 2,250.";
 
-let nextId = 1855000000000000000n;
+let nextId = BigInt("1855000000000000000");
 function tweet(text: string, inReplyTo?: string) {
-  nextId += 1n;
+  nextId += BigInt(1);
   return {
     id: nextId.toString(),
     text,
     author_id: AUTHOR.id,
-    created_at: new Date(Number(nextId % 1_000_000n) * 1000 + Date.UTC(2026, 10, 6)).toISOString(),
+    created_at: new Date(Number(nextId % BigInt(1_000_000)) * 1000 + Date.UTC(2026, 10, 6)).toISOString(),
     conversation_id: inReplyTo ?? nextId.toString(),
     ...(inReplyTo ? { referenced_tweets: [{ type: "replied_to", id: inReplyTo }] } : {}),
   };
@@ -253,6 +253,8 @@ test("an accepted withdrawal disables copying", opts, async () => {
   const after = (await m.getSetupCard(card.setupId))!;
   assert.equal(after.status, "withdrawn");
   assert.equal(after.copyable, false);
+  assert.equal(after.currentVersion.entryPrice, "2350", "withdrawal keeps the revised terms");
+  assert.deepEqual(after.changedFields, []);
 });
 
 test("an unavailable source post disables copying until it is back", opts, async () => {

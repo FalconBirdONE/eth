@@ -49,9 +49,31 @@ export async function reviewCandidate(
       .where(eq(setupVersions.setupId, setupId));
     const versionNumber = (latest ?? 0) + 1;
 
+    // A withdrawal keeps the terms being withdrawn, not the model's copy of
+    // the original post, so the card shows no spurious changes.
+    let carried = {};
+    if (candidate.kind === "withdrawal" && setup.currentVersionId) {
+      const [current] = await tx
+        .select()
+        .from(setupVersions)
+        .where(eq(setupVersions.id, setup.currentVersionId));
+      if (current) {
+        carried = {
+          asset: current.asset,
+          side: current.side,
+          entryCondition: current.entryCondition,
+          entryPrice: current.entryPrice,
+          referenceCurrency: current.referenceCurrency,
+          target: current.target,
+          invalidation: current.invalidation,
+          evidence: current.evidence,
+        };
+      }
+    }
+
     await tx
       .update(setupVersions)
-      .set({ reviewStatus: "accepted", versionNumber, reviewedAt: new Date() })
+      .set({ ...carried, reviewStatus: "accepted", versionNumber, reviewedAt: new Date() })
       .where(eq(setupVersions.id, versionId));
 
     // An explicit update after a withdrawal reinstates the setup.
