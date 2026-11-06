@@ -18,17 +18,17 @@ export function ArrowIcon(props: SVGProps<SVGSVGElement>) {
 export function TerminalMark() {
   return (
     <svg
-      className="terminal-mark"
+      className="size-7"
       width="30"
       height="30"
       viewBox="0 0 30 30"
       fill="none"
       aria-hidden="true"
     >
-      <rect x="1" y="1" width="28" height="28" rx="7" fill="#1E6EF3" />
+      <rect x="1" y="1" width="28" height="28" rx="7" fill="var(--primary)" />
       <path
         d="m8 10 5 5-5 5m8 0h6"
-        stroke="white"
+        stroke="var(--primary-foreground)"
         strokeWidth="2"
         strokeLinecap="round"
         strokeLinejoin="round"

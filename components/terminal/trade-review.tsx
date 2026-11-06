@@ -1,5 +1,12 @@
 "use client";
 import { useEffect, useState } from "react";
+import { ArrowUpRight, Info } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { formatPrice } from "@/lib/example-setup";
 import { demoConfig, type SetupVersion } from "@/lib/terminal-data";
 import {
@@ -8,12 +15,28 @@ import {
   type TradeProvider,
   type TradeReviewRequest,
 } from "@/lib/trade-provider";
+import { Eyebrow, panel } from "./panel";
+
 type Mode = "now" | "copy" | "custom";
 const actions: { id: Mode; label: string }[] = [
   { id: "now", label: "Buy Now" },
   { id: "copy", label: "Copy Entry" },
-  { id: "custom", label: "Customize Entry" },
+  { id: "custom", label: "Customize" },
 ];
+
+function Summary({ rows }: { rows: [string, string][] }) {
+  return (
+    <dl className="grid gap-2.5 rounded-xl border bg-background/50 p-4 text-sm">
+      {rows.map(([dt, dd]) => (
+        <div key={dt} className="flex items-baseline justify-between gap-3">
+          <dt className="text-xs text-muted-foreground">{dt}</dt>
+          <dd className="text-right font-medium tabular-nums">{dd}</dd>
+        </div>
+      ))}
+    </dl>
+  );
+}
+
 export function TradeReview({
   version,
   setupId,
@@ -32,8 +55,7 @@ export function TradeReview({
   const [quoteError, setQuoteError] = useState("");
   const size = Number(amount),
     limit = mode === "copy" ? version.entryUSD : Number(customLimit);
-  const validSize =
-    /^\d+(\.\d{1,2})?$/.test(amount) && size > 0 && size <= 1000000;
+  const validSize = /^\d+(\.\d{1,2})?$/.test(amount) && size > 0 && size <= 1000000;
   const validLimit =
     Number.isFinite(limit) &&
     limit > 0 &&
@@ -51,10 +73,7 @@ export function TradeReview({
           }
         })
         .catch(() => {
-          if (!ignore)
-            setQuoteError(
-              "The quote could not be prepared. Change the amount to try again.",
-            );
+          if (!ignore) setQuoteError("The quote could not be prepared. Change the amount to try again.");
         });
     }
     return () => {
@@ -76,57 +95,64 @@ export function TradeReview({
       sizeUSDC: size,
       network: provider.network.name,
     };
-    if (mode === "now" && currentQuote)
-      onSave({ ...common, type: "swap", quote: currentQuote });
-    else if (mode !== "now")
-      onSave({ ...common, type: "limit", limitUSDCPerWETH: limit });
+    if (mode === "now" && currentQuote) onSave({ ...common, type: "swap", quote: currentQuote });
+    else if (mode !== "now") onSave({ ...common, type: "limit", limitUSDCPerWETH: limit });
   }
+  const invalid = !validSize || (mode !== "now" && !validLimit);
   return (
     <aside
-      className="trade-review"
+      className={cn(
+        panel,
+        "relative h-fit scroll-mt-28 overflow-hidden p-5 shadow-[0_20px_60px_-30px_oklch(0.9_0.19_125/40%)] sm:p-6 xl:sticky xl:top-28",
+      )}
       id="trade-review"
       aria-labelledby="review-heading"
     >
-      <div className="review-heading">
+      <div aria-hidden="true" className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary to-transparent" />
+      <div className="flex items-start justify-between gap-3">
         <div>
-          <span className="t-eyebrow">Your decision</span>
-          <h2 id="review-heading">Review trade</h2>
+          <Eyebrow>Your decision</Eyebrow>
+          <h2 id="review-heading" className="mt-1 text-xl font-semibold">
+            Review trade
+          </h2>
         </div>
-        <span className="t-network">
-          <i />
+        <Badge variant="outline" className="gap-1.5">
+          <i className="size-2 rounded-full bg-[#0052ff]" />
           {provider.network.name}
-        </span>
+        </Badge>
       </div>
-      <div
-        className={`mode-buttons mode-${mode}`}
-        role="group"
-        aria-label="Trade action"
+
+      <Tabs
+        value={mode}
+        onValueChange={(value) => {
+          if (value === "custom" && mode !== "custom") setCustomLimit(String(version.entryUSD));
+          setMode(value as Mode);
+        }}
+        className="mt-5"
       >
-        {actions.map((action) => (
-          <button
-            type="button"
-            key={action.id}
-            aria-pressed={mode === action.id}
-            onClick={() => {
-              setMode(action.id);
-              if (action.id === "custom" && mode !== "custom")
-                setCustomLimit(String(version.entryUSD));
-            }}
-          >
-            {action.label}
-          </button>
-        ))}
-      </div>
-      <form onSubmit={submit} className="review-form" key={mode}>
-        <div className="review-path">
-          <strong>
+        <TabsList aria-label="Trade action" className="h-9! w-full">
+          {actions.map((action) => (
+            <TabsTrigger key={action.id} value={action.id} className="text-xs data-[state=active]:text-primary">
+              {action.label}
+            </TabsTrigger>
+          ))}
+        </TabsList>
+      </Tabs>
+
+      <form
+        onSubmit={submit}
+        className="animate-in fade-in slide-in-from-bottom-2 mt-5 grid gap-4 duration-300"
+        key={mode}
+      >
+        <div>
+          <strong className="text-sm font-medium">
             {mode === "now"
               ? "Uniswap swap review"
               : mode === "copy"
                 ? "Copy the detected entry"
                 : "Choose your limit"}
           </strong>
-          <p>
+          <p className="mt-0.5 text-xs text-muted-foreground">
             {mode === "now"
               ? "Review an illustrative USDC → WETH quote."
               : mode === "copy"
@@ -134,14 +160,15 @@ export function TradeReview({
                 : "Your limit is independent of the creator’s entry."}
           </p>
         </div>
+
         {mode !== "now" && (
-          <label className="trade-field">
-            <span>
+          <div className="grid gap-1.5">
+            <Label htmlFor="limit-input" className="flex justify-between text-xs">
               {mode === "copy" ? "Proposed limit" : "Your limit"}
-              <small>USDC per WETH</small>
-            </span>
-            <input
-              aria-label={mode === "copy" ? "Proposed limit" : "Your limit"}
+              <span className="font-normal text-muted-foreground">USDC per WETH</span>
+            </Label>
+            <Input
+              id="limit-input"
               type="number"
               inputMode="decimal"
               min="0.000001"
@@ -152,19 +179,22 @@ export function TradeReview({
               readOnly={mode === "copy"}
               onChange={(event) => setCustomLimit(event.target.value)}
               aria-describedby="limit-help"
+              className="h-11 text-lg font-medium tabular-nums read-only:text-muted-foreground"
             />
-            <small id="limit-help">
+            <small id="limit-help" className="text-[11px] text-muted-foreground">
               {mode === "copy"
                 ? "Switch to Customize Entry to edit this price."
                 : `Creator’s entry: $${formatPrice(version.entryUSD)} USD`}
             </small>
-          </label>
+          </div>
         )}
-        <label className="trade-field">
-          <span>
-            Size<small>USDC</small>
-          </span>
-          <input
+
+        <div className="grid gap-1.5">
+          <Label htmlFor="size-input" className="flex justify-between text-xs">
+            Size <span className="font-normal text-muted-foreground">USDC</span>
+          </Label>
+          <Input
+            id="size-input"
             aria-label="Size in USDC"
             type="number"
             inputMode="decimal"
@@ -174,88 +204,64 @@ export function TradeReview({
             required
             value={amount}
             onChange={(event) => setAmount(event.target.value)}
+            aria-invalid={!validSize || undefined}
+            className="h-11 text-lg font-medium tabular-nums"
           />
-        </label>
-        {(!validSize || (mode !== "now" && !validLimit)) && (
-          <p className="field-error" role="status">
-            Enter a positive size with up to 2 decimals and a limit with up to 6
-            decimals. Maximum: 1,000,000.
+        </div>
+
+        {invalid && (
+          <p className="animate-in fade-in rounded-lg bg-destructive/10 px-3 py-2 text-xs text-destructive" role="status">
+            Enter a positive size with up to 2 decimals and a limit with up to 6 decimals. Maximum: 1,000,000.
           </p>
         )}
+
         {mode === "now" ? (
-          <div className="quote-review">
-            <span className="t-badge">Illustrative quote</span>
-            <dl>
-              <div>
-                <dt>Expected output</dt>
-                <dd>
-                  {validSize && currentQuote
-                    ? formatPrice(currentQuote.expectedWETH, 10)
-                    : "—"}{" "}
-                  WETH
-                </dd>
-              </div>
-              <div>
-                <dt>Minimum output</dt>
-                <dd>
-                  {validSize && currentQuote
-                    ? formatPrice(currentQuote.minimumWETH, 10)
-                    : "—"}{" "}
-                  WETH
-                </dd>
-              </div>
-              <div>
-                <dt>Slippage assumption</dt>
-                <dd>0.5%</dd>
-              </div>
-              <div>
-                <dt>Quote freshness</dt>
-                <dd>{currentQuote?.freshness ?? "Preparing example…"}</dd>
-              </div>
-            </dl>
-            <p>
-              A fixed example rate of 2,500 USDC per WETH. Gas and fees are not
-              estimated.
+          <div className="grid gap-3">
+            <Badge variant="secondary" className="w-fit">
+              Illustrative quote
+            </Badge>
+            <Summary
+              rows={[
+                ["Expected output", `${validSize && currentQuote ? formatPrice(currentQuote.expectedWETH, 10) : "—"} WETH`],
+                ["Minimum output", `${validSize && currentQuote ? formatPrice(currentQuote.minimumWETH, 10) : "—"} WETH`],
+                ["Slippage assumption", "0.5%"],
+                ["Quote freshness", currentQuote?.freshness ?? "Preparing example…"],
+              ]}
+            />
+            <p className="text-[11px] text-muted-foreground">
+              A fixed example rate of 2,500 USDC per WETH. Gas and fees are not estimated.
             </p>
             {quoteError && (
-              <p className="field-error" role="alert">
+              <p className="rounded-lg bg-destructive/10 px-3 py-2 text-xs text-destructive" role="alert">
                 {quoteError}
               </p>
             )}
           </div>
         ) : (
-          <dl className="limit-summary">
-            <div>
-              <dt>Creator’s entry</dt>
-              <dd>${formatPrice(version.entryUSD)} USD</dd>
-            </div>
-            <div>
-              <dt>Your proposed limit</dt>
-              <dd>{validLimit ? formatPrice(limit) : "—"} USDC / WETH</dd>
-            </div>
-            <div>
-              <dt>Order source</dt>
-              <dd>Setup {version.id}</dd>
-            </div>
-            <div>
-              <dt>Order provider</dt>
-              <dd>Definitive Flash · simulated</dd>
-            </div>
-          </dl>
+          <Summary
+            rows={[
+              ["Creator’s entry", `$${formatPrice(version.entryUSD)} USD`],
+              ["Your proposed limit", `${validLimit ? formatPrice(limit) : "—"} USDC / WETH`],
+              ["Order source", `Setup ${version.id}`],
+              ["Order provider", "Definitive Flash · simulated"],
+            ]}
+          />
         )}
-        <div className="demo-review-note">
-          <span className="blue-dot" />
+
+        <div className="flex items-start gap-2 text-xs text-muted-foreground">
+          <Info className="mt-0.5 size-3.5 shrink-0 text-primary" />
           <p>Demo mode. No funds move and no wallet signature is requested.</p>
         </div>
-        <button
-          className="button terminal-primary"
+        <Button
+          size="lg"
+          className="h-11 text-sm shadow-[0_0_30px_-10px_var(--primary)]"
           type="submit"
           disabled={!canSimulate}
         >
           {mode === "now" ? "Simulate swap" : "Simulate limit order"}
-          <span aria-hidden="true">↗</span>
-        </button>
-        <p className="review-fineprint">
+          <ArrowUpRight aria-hidden="true" />
+        </Button>
+        <p className="text-center text-[11px] text-muted-foreground">
           {provider.environment === "demo"
             ? "Saved only in this browser. You can reset your simulations."
             : "Connected execution requires a configured provider and explicit wallet confirmation."}

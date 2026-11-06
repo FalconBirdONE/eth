@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { TerminalApp } from "@/components/terminal/terminal-app";
-import "./terminal.css";
 export const metadata: Metadata = {
   title: "Terminal — Setup Terminal",
   description:
